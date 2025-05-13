@@ -95,15 +95,3 @@ Define parent→children relationships, one per line:
 - **video_prompt**: `creature, furred, puppy`
 
 ---
-
-## Contributing
-
-1. Fork this repo  
-2. Edit **branching_wildcard.py** or improve docs  
-3. Open a PR — patches & examples welcome!
-
----
-
-## License
-
-MIT © Your Name
