@@ -43,6 +43,7 @@ class BranchingWildcardNode:
             if ">" not in line: continue
             left, right = [s.strip() for s in line.split(">", 1)]
 
+            # grouped parents
             parent_tokens = [p.strip() for p in left.split("|")]
             for ptok in parent_tokens:
                 parts = [x.strip() for x in ptok.split(":", 2)]
@@ -52,6 +53,7 @@ class BranchingWildcardNode:
                 if len(parts) >= 3 and parts[2]:
                     desc2_map[tag].append(parts[2])
 
+            # children
             for part in [c.strip() for c in right.split("|") if c.strip()]:
                 parts = [x.strip() for x in part.split(":", 2)]
                 tag   = parts[0]
@@ -73,10 +75,14 @@ class BranchingWildcardNode:
             for fn in models.replace("|", ",").split(","):
                 fn = fn.strip()
                 if not fn: continue
+
+                # low-mem suffix
                 low_mem = False
                 if fn.lower().endswith(":lowmem"):
                     low_mem = True
-                    fn = fn[: -len(":lowmem")].strip()
+                    fn = fn[:-len(":lowmem")].strip()
+
+                # strength suffix
                 if "@" in fn:
                     name, raw = fn.rsplit("@", 1)
                     try:
@@ -86,10 +92,11 @@ class BranchingWildcardNode:
                 else:
                     name = fn
                     strength = 1.0
+
                 entries.append((name, strength, low_mem))
             lora_map[tag] = entries
 
-        # --- 3) RNG setup ---
+        # --- 3) RNG setup + backward helper ---
         if seed is None or seed < 0:
             seed = random.randrange(2**32)
         rng = random.Random(seed)
@@ -102,14 +109,14 @@ class BranchingWildcardNode:
                 seq.append(cur)
             return list(reversed(seq))
 
-        # --- 4) Build the pinned + random path list ---
+        # --- 4) Build pinned + random path_tags ---
         segments = [s.strip() for s in path.split("/") if s.strip()]
         path_tags = []
 
         if segments and segments[0] == "*":
             pinned = [t for t in segments[1:] if t in desc1_map or t in desc2_map]
             if not pinned:
-                raise ValueError(f"No valid start found among {segments[1:]}")
+                raise ValueError(f"No valid start among {segments[1:]}")
             path_tags = backward_fill(pinned[0])
             cur = path_tags[-1]
             for t in pinned[1:]:
@@ -125,7 +132,7 @@ class BranchingWildcardNode:
             idx = next((i for i, t in enumerate(segments)
                         if t in desc1_map or t in desc2_map), None)
             if idx is None:
-                raise ValueError(f"No valid start found among {segments}")
+                raise ValueError(f"No valid start among {segments}")
             filtered = segments[idx:]
             cur = None
             for i, t in enumerate(filtered):
@@ -151,22 +158,28 @@ class BranchingWildcardNode:
                 cur = rng.choice(tree[cur])
                 path_tags.append(cur)
 
+        # filter out any None
+        path_tags = [t for t in path_tags if isinstance(t, str)]
+
         # --- 5) Assemble outputs ---
 
+        # tags
         tags_str = tag_delim.join(t.replace(" ", "_").lower() for t in path_tags)
 
+        # image descriptions
         image_list = []
         for t in path_tags:
             image_list.extend(desc1_map.get(t, []))
         image_str = text_delim.join(image_list)
 
+        # video descriptions
         video_list = []
         for t in path_tags:
             video_list.extend(desc2_map.get(t, []))
         video_str = video_delim.join(video_list)
 
-        # direct WANVIDLORA list, with default blocks=True for 40 blocks
-        default_blocks = [True]*40
+        # direct WANVIDLORA list, with default blocks 0–19 True, 20–39 False
+        default_blocks = [True]*20 + [False]*20
         loras = []
         for t in path_tags:
             for name, strength, low_mem in lora_map.get(t, []):
