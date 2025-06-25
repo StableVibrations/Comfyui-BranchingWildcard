@@ -179,7 +179,7 @@ class BranchingWildcardNode:
         video_str = video_delim.join(video_list)
 
         # direct WANVIDLORA list, with default blocks 0–19 True, 20–39 False
-        default_blocks = [True]*20 + [False]*20
+        default_blocks = [True]*25 + [False]*15
         loras = []
         for t in path_tags:
             for name, strength, low_mem in lora_map.get(t, []):
