@@ -62,7 +62,7 @@ It’s designed to sit near the front of your workflow and decide, for each run,
   - `>= 0` → deterministic branch selection for that seed.
 
 - `tag_delim`  
-  Delimiter for the `tag` output (default: space).
+  Delimiter for the `tag` output (default: /).
 
 - `text_delim`  
   Delimiter for **Description 1** output (default: `", "`).
