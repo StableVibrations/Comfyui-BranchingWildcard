@@ -30,7 +30,7 @@ class BranchingWildcardNode:
                 }),
                 "seed":          ("INT",     {"default": -1, "min": -1, "max": 2**31 - 1}),
                 # Delimiters at the bottom
-                "tag_delim":     ("STRING",  {"default": " "}),
+                "tag_delim":     ("STRING",  {"default": "/"}),
                 "text_delim":    ("STRING",  {"default": ", "}),
                 "video_delim":   ("STRING",  {"default": ", "}),
             },
